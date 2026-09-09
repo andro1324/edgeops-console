@@ -1,0 +1,3 @@
+export default function RegionHealth({ regions }) {
+  return <div className="region-list">{regions.map((region) => <div className="region-row" key={region.code}><div className="region-identity"><div className="region-code">{region.code}</div><div><strong>{region.name}</strong><span>{region.nodes} edge nodes</span></div></div><div className="region-health"><status-badge status={region.status}>{region.status}</status-badge><strong>{region.availability.toFixed(2)}%</strong></div></div>)}</div>;
+}

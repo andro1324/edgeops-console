@@ -1,0 +1,12 @@
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react';
+import { api } from '../../api/client';
+
+export default function IncidentModal({ onClose }) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({ title: '', summary: '', severity: 'medium', region: 'EU-CENTRAL' });
+  const mutation = useMutation({ mutationFn: api.createIncident, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['incidents'] }); onClose(); } });
+  const submit = (event) => { event.preventDefault(); if (form.title.trim() && form.summary.trim()) mutation.mutate(form); };
+  return <div className="modal-backdrop" role="presentation" onMouseDown={onClose}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="incident-title" onMouseDown={(e)=>e.stopPropagation()}><header><div><span className="eyebrow">Operations</span><h2 id="incident-title">Create incident</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={19}/></button></header><form onSubmit={submit}><label>Incident title<input required value={form.title} onChange={(e)=>setForm({...form,title:e.target.value})} placeholder="Elevated latency in EU Central"/></label><label>Summary<textarea required rows="4" value={form.summary} onChange={(e)=>setForm({...form,summary:e.target.value})} placeholder="Describe user impact and current signals…"/></label><div className="form-grid"><label>Severity<select value={form.severity} onChange={(e)=>setForm({...form,severity:e.target.value})}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label><label>Region<select value={form.region} onChange={(e)=>setForm({...form,region:e.target.value})}><option>EU-CENTRAL</option><option>EU-WEST</option><option>US-EAST</option><option>US-WEST</option><option>AP-SOUTH</option></select></label></div>{mutation.error && <p className="form-error">{mutation.error.message}</p>}<div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" disabled={mutation.isPending}>{mutation.isPending?'Creating…':'Create incident'}</button></div></form></div></div>;
+}
