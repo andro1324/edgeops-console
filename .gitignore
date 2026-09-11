@@ -8,3 +8,5 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
+*.db
+backend/tests/edgeops-test.db
