@@ -2,107 +2,30 @@
 
 **Enterprise Network & Cloud Operations Dashboard**
 
-EdgeOps Console is a full-stack network and infrastructure monitoring application designed to demonstrate modern frontend engineering practices in an enterprise-oriented environment.
+EdgeOps Console is a full-stack infrastructure monitoring and incident-management application built to demonstrate modern JavaScript frontend engineering in an enterprise operations environment.
 
-The platform provides a centralized interface for monitoring global edge infrastructure, CDN traffic, server health, regional availability, network protocols, and operational incidents.
+The project combines a responsive React interface with a FastAPI backend, persistent SQL storage, PostgreSQL support, search, notifications, incident audit history, REST APIs, Docker, Nginx, automated tests and GitHub Actions CI.
 
-The project combines a modern **React frontend** with a lightweight **FastAPI backend**, RESTful communication, reusable UI architecture, responsive design, SQL modeling, Docker-based deployment, Nginx configuration, automated testing, and continuous integration.
+## Highlights
 
----
-
-## Overview
-
-Modern infrastructure teams need a clear view of network health, server utilization, traffic distribution, regional availability, and active incidents.
-
-EdgeOps Console models such an operational environment through four primary modules:
-
-- **Global Overview** — high-level infrastructure and network metrics
-- **Infrastructure** — edge node and server resource monitoring
-- **Traffic Intelligence** — CDN, protocol, and regional traffic analytics
-- **Incident Center** — incident creation, tracking, and resolution
-
-Unlike a static dashboard mockup, the frontend communicates with a real HTTP API and handles loading states, errors, queries, mutations, and cache invalidation.
-
----
-
-## Key Features
-
-### Global Operations Dashboard
-
-The main dashboard provides an immediate overview of the network infrastructure, including:
-
-- Global uptime
-- Healthy and total edge nodes
-- Requests per minute
-- P95 response latency
-- 24-hour traffic visualization
-- Regional availability
-- Regional operational status
-
-The dashboard is designed to provide infrastructure operators with the most important system information at a glance.
-
----
-
-### Infrastructure Monitoring
-
-The infrastructure module provides detailed information about individual edge nodes and servers.
-
-Available information includes:
-
-- Server hostname
-- IP address
-- Operating system
-- Region
-- Current status
-- CPU utilization
-- Memory utilization
-- Disk utilization
-- System uptime
-
-Reusable UI components and status indicators make it easy to identify degraded or unhealthy infrastructure.
-
----
-
-### Traffic Intelligence
-
-The Traffic Intelligence module provides insight into CDN delivery and network protocol usage.
-
-Metrics include:
-
-- Total requests over the last 24 hours
-- CDN cache-hit ratio
-- TLS 1.3 adoption
-- Countries served
-- Regional request distribution
-- HTTP/1.1 usage
-- HTTP/2 usage
-- HTTP/3 usage
-- QUIC transport
-- IPv6 traffic share
-
-This module demonstrates how infrastructure telemetry can be transformed into an operationally useful user interface.
-
----
-
-### Incident Management
-
-EdgeOps Console includes a functional incident management workflow backed by the FastAPI service.
-
-Users can:
-
-- View current and historical incidents
-- Inspect incident severity
-- Track incident status
-- View affected regions
-- Identify assigned owners
-- Create new incidents
-- Resolve active incidents
-
-Incident actions use real HTTP requests rather than local frontend-only state.
-
-TanStack Query handles mutation state and cache invalidation after changes.
-
----
+- Global network operations dashboard with uptime, edge-node health, request volume and latency metrics
+- Infrastructure monitoring for server CPU, memory, disk, operating system and availability
+- CDN and traffic intelligence with regional request distribution and HTTP protocol analytics
+- Persistent incident creation and resolution workflow
+- Persistent incident audit trail
+- Functional global search for nodes, incidents and regions
+- Functional notifications panel with unread state and mark-all-read action
+- Functional user profile panel backed by the API
+- React Query server-state caching and mutation invalidation
+- Zustand for lightweight local UI state
+- Native Web Component integration
+- FastAPI REST backend with Pydantic validation
+- SQLite persistence for simple local development
+- PostgreSQL persistence automatically enabled through Docker Compose
+- Dockerized API and frontend
+- Nginx reverse proxy and SPA fallback
+- Pytest backend tests and Vitest frontend utility tests
+- GitHub Actions CI for linting, tests and production builds
 
 ## Technology Stack
 
@@ -116,125 +39,207 @@ TanStack Query handles mutation state and cache invalidation after changes.
 - Zustand
 - Recharts
 - Lucide React
-- Native Fetch API
-- Web Components
+- Fetch API
+- Web Components / Custom Elements
 - HTML5
-- Custom responsive CSS
+- Responsive CSS
 
 ### Backend
 
-- Python
+- Python 3.12
 - FastAPI
 - Pydantic
 - Uvicorn
-- REST API
-- CORS middleware
+- REST / JSON APIs
 
-### Database Design
+### Data
 
-- SQL
-- Relational schema
-- Primary and foreign keys
-- Constraints
-- Indexes
+- PostgreSQL 16 for Docker-based deployments
+- SQLite fallback for zero-configuration local development
+- Relational SQL schema
+- Persistent incidents, notifications and incident audit history
 
-The current portfolio implementation uses in-memory demo data while a relational schema is included for future PostgreSQL persistence.
-
-### Infrastructure & DevOps
+### DevOps & Quality
 
 - Docker
 - Docker Compose
 - Nginx
 - GitHub Actions
-- Linux-compatible container environment
-
-### Testing & Quality
-
-- ESLint
 - Pytest
-- Vitest-ready frontend configuration
-- Automated GitHub Actions CI workflow
+- Vitest
+- ESLint
 
----
+## Application Modules
 
-## Architecture
+### Global Overview
 
-The project follows a feature-oriented architecture that separates UI components, application state, HTTP communication, business features, and backend services.
+The dashboard provides a concise operations view of:
+
+- Global uptime
+- Healthy vs total edge nodes
+- Requests per minute
+- P95 latency
+- 24-hour traffic trend
+- Regional availability
+- Regional health status
+
+### Infrastructure
+
+The infrastructure view displays operational information for edge nodes, including:
+
+- Hostname
+- Region
+- IP address
+- Operating system
+- Uptime
+- CPU utilization
+- Memory utilization
+- Disk utilization
+- Health state
+
+### Traffic Intelligence
+
+Traffic analytics include:
+
+- 24-hour request volume
+- CDN cache-hit ratio
+- TLS 1.3 adoption
+- Countries served
+- Top delivery regions
+- HTTP/1.1, HTTP/2 and HTTP/3 share
+- QUIC transport
+- IPv6 traffic
+
+### Incident Center
+
+The incident workflow supports:
+
+- Listing current and resolved incidents
+- Creating incidents
+- Severity and region classification
+- Resolving active incidents
+- Persistent database storage
+- Persistent incident audit history
+- Notifications generated for newly created incidents
+
+## Functional Topbar
+
+The application topbar is fully interactive.
+
+### Search
+
+The global search field queries the backend after a short debounce and returns matching:
+
+- Edge nodes
+- Incidents
+- Regions
+
+Selecting a result navigates directly to the relevant application section.
+
+### Notifications
+
+The notification bell loads persistent notifications from the backend. Users can:
+
+- View unread notifications
+- Open the related application section
+- Mark all notifications as read
+
+### Profile
+
+The profile control opens a live profile panel populated by the API with role, email, location, availability and timezone information.
+
+## REST API
+
+FastAPI exposes the following endpoints:
+
+```text
+GET   /api/health
+GET   /api/overview
+GET   /api/nodes
+GET   /api/traffic
+GET   /api/incidents
+POST  /api/incidents
+PATCH /api/incidents/{id}/resolve
+GET   /api/incidents/{id}/audit
+GET   /api/search?q={query}
+GET   /api/notifications
+PATCH /api/notifications/read-all
+GET   /api/profile
+```
+
+Interactive API documentation is available at:
+
+```text
+http://localhost:8000/api/docs
+```
+
+## Persistence Model
+
+The backend no longer stores incidents only in Python memory.
+
+For regular local development, the API automatically creates and uses a persistent SQLite database:
+
+```text
+backend/edgeops.db
+```
+
+For the containerized environment, Docker Compose automatically provisions PostgreSQL and configures the API to use it.
+
+The relational schema includes:
+
+- `regions`
+- `edge_nodes`
+- `incidents`
+- `incident_audit`
+- `notifications`
+
+The source schema is available in:
+
+```text
+database/schema.sql
+```
+
+## Project Structure
 
 ```text
 edgeops-console/
-│
 ├── .github/
 │   └── workflows/
 │       └── ci.yml
-│
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
-│   │   ├── data.py
+│   │   ├── db.py
 │   │   ├── main.py
 │   │   └── models.py
-│   │
 │   ├── tests/
 │   │   └── test_api.py
-│   │
 │   └── requirements.txt
-│
 ├── database/
 │   └── schema.sql
-│
 ├── docs/
 │   └── ARCHITECTURE.md
-│
 ├── frontend/
 │   ├── public/
-│   │
 │   ├── src/
 │   │   ├── api/
-│   │   │   └── client.js
-│   │   │
 │   │   ├── components/
-│   │   │   ├── AppShell.jsx
-│   │   │   ├── ErrorState.jsx
-│   │   │   ├── LoadingState.jsx
-│   │   │   ├── MetricCard.jsx
-│   │   │   ├── PageHeader.jsx
-│   │   │   ├── Panel.jsx
-│   │   │   ├── Sidebar.jsx
-│   │   │   └── Topbar.jsx
-│   │   │
 │   │   ├── features/
 │   │   │   ├── dashboard/
 │   │   │   ├── incidents/
 │   │   │   ├── infrastructure/
 │   │   │   └── traffic/
-│   │   │
 │   │   ├── hooks/
-│   │   │   └── useApiQuery.js
-│   │   │
 │   │   ├── lib/
-│   │   │   └── format.js
-│   │   │
 │   │   ├── store/
-│   │   │   └── uiStore.js
-│   │   │
 │   │   ├── styles/
-│   │   │   └── global.css
-│   │   │
-│   │   ├── web-components/
-│   │   │   └── status-badge.js
-│   │   │
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   │
-│   ├── eslint.config.js
-│   ├── index.html
+│   │   └── web-components/
+│   ├── Dockerfile
+│   ├── nginx.conf
 │   ├── package.json
 │   └── vite.config.js
-│
 ├── nginx/
 │   └── default.conf
-│
 ├── .env.example
 ├── .gitignore
 ├── docker-compose.yml
@@ -242,353 +247,58 @@ edgeops-console/
 └── README.md
 ```
 
----
-
-## Frontend Architecture
-
-The frontend is organized around domain features rather than placing all components in a single directory.
-
-Major application domains are located under:
-
-```text
-frontend/src/features/
-```
-
-and include:
-
-```text
-dashboard/
-infrastructure/
-traffic/
-incidents/
-```
-
-Shared presentation components remain separate under:
-
-```text
-frontend/src/components/
-```
-
-This approach improves maintainability and makes the application easier to extend as new operational modules are introduced.
-
----
-
-## State Management
-
-EdgeOps Console separates **server state** from **client UI state**.
-
-### TanStack Query
-
-TanStack Query manages data received from the backend, including:
-
-- API requests
-- Loading states
-- Error states
-- Caching
-- Refetching
-- Mutations
-- Cache invalidation
-
-### Zustand
-
-Zustand is used only for lightweight client-side presentation state.
-
-This prevents remote API data from being unnecessarily duplicated inside a global frontend store.
-
----
-
-## HTTP Layer
-
-Frontend components do not communicate with the Fetch API directly.
-
-HTTP communication is centralized in:
-
-```text
-frontend/src/api/client.js
-```
-
-The request layer handles:
-
-- Base API configuration
-- JSON communication
-- HTTP headers
-- Request timeouts
-- AbortController cancellation
-- Error normalization
-- GET requests
-- POST requests
-- PATCH requests
-
-This creates a consistent boundary between frontend components and backend services.
-
----
-
-## Web Components
-
-The project contains a native browser Web Component:
-
-```text
-frontend/src/web-components/status-badge.js
-```
-
-The custom element demonstrates interoperability between React and browser-native Custom Elements.
-
-It is used for displaying operational status information without relying exclusively on React components.
-
----
-
-## REST API
-
-The backend exposes the following API routes.
-
-### Health Check
-
-```http
-GET /api/health
-```
-
-Returns:
-
-```text
-204 No Content
-```
-
-Used to verify API availability.
-
----
-
-### Operations Overview
-
-```http
-GET /api/overview
-```
-
-Returns global infrastructure information such as:
-
-- uptime
-- healthy node count
-- requests per minute
-- latency
-- traffic history
-- regional availability
-
----
-
-### Infrastructure Nodes
-
-```http
-GET /api/nodes
-```
-
-Returns the available edge infrastructure nodes and their current utilization metrics.
-
----
-
-### Traffic Analytics
-
-```http
-GET /api/traffic
-```
-
-Returns:
-
-- request volume
-- cache-hit ratio
-- TLS adoption
-- geographic traffic
-- HTTP protocol distribution
-- IPv6 usage
-
----
-
-### List Incidents
-
-```http
-GET /api/incidents
-```
-
-Returns operational incidents ordered by start time.
-
----
-
-### Create Incident
-
-```http
-POST /api/incidents
-```
-
-Creates a new operational incident.
-
-The backend validates the request payload using Pydantic models and returns:
-
-```text
-201 Created
-```
-
----
-
-### Resolve Incident
-
-```http
-PATCH /api/incidents/{incident_id}/resolve
-```
-
-Marks an existing incident as resolved.
-
-If the incident does not exist, the API returns:
-
-```text
-404 Not Found
-```
-
----
-
-## HTTP & Browser Engineering
-
-The application demonstrates practical HTTP and browser concepts rather than abstracting everything behind third-party libraries.
-
-Implemented concepts include:
-
-- RESTful endpoint design
-- JSON request and response bodies
-- `Accept` headers
-- `Content-Type` headers
-- HTTP status codes
-- CORS
-- Fetch API
-- AbortController
-- Request cancellation
-- API timeout handling
-- Error normalization
-- Reverse proxying
-- SPA routing fallback
-
-The backend uses appropriate HTTP response codes including:
-
-```text
-200 OK
-201 Created
-204 No Content
-404 Not Found
-```
-
-Validation errors are handled automatically through FastAPI and Pydantic.
-
----
-
-## Responsive UI
-
-The user interface is built using custom CSS rather than a UI framework.
-
-The styling architecture includes:
-
-- CSS design tokens
-- Responsive breakpoints
-- Grid layouts
-- Flexible dashboard cards
-- Responsive navigation
-- Accessible buttons and controls
-- Mobile-friendly layouts
-- Consistent spacing and typography
-- Operational status indicators
-
-The interface is intended to resemble a modern network operations or infrastructure management platform.
-
----
-
 ## Local Development
 
 ### Prerequisites
 
-Make sure the following tools are installed:
-
 - Node.js 20+
 - npm
-- Python 3.11+
+- Python 3.12+
 - pip
-- Git
 
-Docker is optional for containerized execution.
-
----
-
-## Run the Backend
-
-Navigate to the backend directory:
+### Backend
 
 ```bash
 cd backend
-```
-
-Create a Python virtual environment:
-
-```bash
 python -m venv .venv
 ```
 
-Activate the virtual environment.
+Activate the environment.
 
-### Windows
+Windows:
 
 ```bash
 .venv\Scripts\activate
 ```
 
-### Linux / macOS
+Linux / macOS:
 
 ```bash
 source .venv/bin/activate
 ```
 
-Install the Python dependencies:
+Install dependencies and start the API:
 
 ```bash
 pip install -r requirements.txt
-```
-
-Start the FastAPI development server:
-
-```bash
 uvicorn app.main:app --reload
 ```
 
-The backend will be available at:
+The API runs at:
 
 ```text
 http://localhost:8000
 ```
 
-Interactive API documentation:
+When `DATABASE_URL` is not provided, the backend automatically uses persistent SQLite storage.
 
-```text
-http://localhost:8000/api/docs
-```
+### Frontend
 
-OpenAPI specification:
-
-```text
-http://localhost:8000/api/openapi.json
-```
-
----
-
-## Run the Frontend
-
-Open another terminal and navigate to:
+In a second terminal:
 
 ```bash
 cd frontend
-```
-
-Install dependencies:
-
-```bash
 npm install
-```
-
-Start the development server:
-
-```bash
 npm run dev
 ```
 
@@ -598,278 +308,164 @@ Open:
 http://localhost:5173
 ```
 
-During development, Vite proxies frontend `/api` requests to the FastAPI backend.
+Vite automatically proxies `/api` traffic to the FastAPI development server.
 
----
+## Docker Compose
 
-## Frontend Commands
-
-Start the development environment:
-
-```bash
-npm run dev
-```
-
-Create a production build:
-
-```bash
-npm run build
-```
-
-Run ESLint:
-
-```bash
-npm run lint
-```
-
-Preview the production build:
-
-```bash
-npm run preview
-```
-
-Run configured frontend tests:
-
-```bash
-npm run test
-```
-
----
-
-## Backend Tests
-
-Navigate to:
-
-```bash
-cd backend
-```
-
-Run:
-
-```bash
-pytest -q
-```
-
-Backend tests cover core API behavior, including:
-
-- API read operations
-- Incident creation
-- Incident resolution lifecycle
-
----
-
-## Docker
-
-A Docker configuration is included for containerized execution.
-
-Build the application image:
-
-```bash
-docker build -t edgeops-console .
-```
-
-Run the container:
-
-```bash
-docker run --rm -p 8000:8000 edgeops-console
-```
-
----
-
-## Docker Compose & Nginx
-
-The project also includes Docker Compose and Nginx configuration for a multi-service deployment example.
-
-First create the frontend production build:
-
-```bash
-cd frontend
-npm install
-npm run build
-```
-
-Return to the project root and run:
+The complete production-like environment can be started with one command:
 
 ```bash
 docker compose up --build
 ```
 
-The application can then be accessed at:
+Docker Compose starts:
+
+1. PostgreSQL 16
+2. FastAPI backend
+3. React production build served by Nginx
+
+Open the application at:
 
 ```text
 http://localhost:8080
 ```
 
-Nginx provides:
+The API is also exposed at:
 
-- Static frontend delivery
-- Single-page application routing fallback
-- API reverse proxying
-- HTTP forwarding
-- Basic production security headers
+```text
+http://localhost:8000
+```
 
----
+PostgreSQL data is stored in a named Docker volume, so incidents, notifications and audit entries survive container restarts.
+
+To remove containers and the database volume completely:
+
+```bash
+docker compose down -v
+```
+
+## Testing
+
+### Backend
+
+```bash
+cd backend
+PYTHONPATH=. pytest -q
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:PYTHONPATH="."
+pytest -q
+```
+
+The backend test suite covers:
+
+- Operations overview contract
+- Incident creation
+- Incident resolution
+- Persistent incident audit entries
+- Global search
+- Notifications
+- Mark-all-read behavior
+- Profile endpoint
+
+### Frontend
+
+```bash
+cd frontend
+npm run test
+```
+
+### Code Quality
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
 
 ## Continuous Integration
 
-The repository includes a GitHub Actions workflow located at:
+GitHub Actions runs automatically for pushes to `main` and pull requests.
+
+The CI workflow performs:
+
+### Frontend
+
+- Dependency installation
+- ESLint validation
+- Vitest tests
+- Production Vite build
+
+### Backend
+
+- Python dependency installation
+- Pytest test suite with the correct module path
+
+The workflow is located at:
 
 ```text
 .github/workflows/ci.yml
 ```
 
-The CI pipeline performs automated quality checks for the application.
+## HTTP & Browser Engineering
 
-This helps detect problems before changes are integrated into the main development branch.
+The project demonstrates practical web-platform knowledge through:
 
-The project includes tooling for:
-
-- Frontend linting
-- Frontend production builds
-- Backend testing
-- Automated repository validation
-
----
-
-## Database Model
-
-The relational database design is located at:
-
-```text
-database/schema.sql
-```
-
-The schema demonstrates a production-oriented relational model using:
-
-- Tables
-- Primary keys
-- Foreign keys
-- Constraints
-- Indexes
-
-The current application intentionally uses in-memory data to keep the portfolio project easy to run without requiring an external database server.
-
-The provided SQL schema represents the persistence layer that can be used when evolving the application toward a production environment.
-
----
-
-## Design Decisions
-
-### Feature-Oriented Frontend
-
-Application functionality is grouped around business domains instead of file types alone.
-
-This keeps related components close to the functionality they support.
-
-### Centralized API Layer
-
-Components do not contain duplicated networking logic.
-
-All HTTP communication is handled through the dedicated API layer.
-
-### Server State vs. UI State
-
-Remote API state is managed by TanStack Query, while lightweight interface state is managed independently through Zustand.
-
-### Native Browser APIs
-
-The application intentionally demonstrates knowledge beyond React by using:
-
+- RESTful resource design
+- JSON content negotiation
+- GET, POST and PATCH requests
+- Correct HTTP response codes
 - Fetch API
-- AbortController
-- Custom Elements
-- HTTP semantics
-- Semantic HTML
-- Native CSS
+- AbortController request cancellation
+- Request timeout handling
+- CORS
+- SPA routing
+- Nginx reverse proxying
+- Native Custom Elements
+- Responsive semantic UI components
 
-### Real Backend Integration
+## Architecture Decisions
 
-The backend makes the frontend genuinely dynamic.
+The frontend is organized by business feature rather than as a single flat component directory. Shared UI primitives remain separate from domain-specific functionality.
 
-This enables realistic:
+TanStack Query owns server state, while Zustand is limited to local UI state. HTTP logic is centralized in a reusable API client so components do not duplicate networking concerns.
 
-- loading flows
-- error handling
-- API queries
-- mutations
-- state synchronization
-- cache invalidation
+The backend uses a lightweight database abstraction that supports SQLite for easy development and PostgreSQL for containerized deployment. Database initialization is idempotent and seeds realistic operational demo data only when tables are empty.
 
----
+Incident mutations write to both the incident record and a persistent audit trail. Notification state is persisted rather than being recreated only on the frontend.
+
+More detail is available in `docs/ARCHITECTURE.md`.
 
 ## Production Evolution
 
-EdgeOps Console is currently designed as a portfolio and technical demonstration project.
+The current project already includes persistent PostgreSQL support, an audit trail, Docker deployment, CI and functional operational interactions.
 
-A real production deployment could extend the architecture with:
+For a larger real-world deployment, logical next steps would include:
 
-- PostgreSQL persistence based on the included relational schema
 - OAuth 2.0 / OpenID Connect authentication
-- Single Sign-On
-- Role-based access control
-- Persistent user accounts
-- Persistent incident history
-- Incident audit trails
-- WebSocket or Server-Sent Events for live telemetry
-- Prometheus metrics
-- Grafana dashboards
-- OpenTelemetry distributed tracing
-- API rate limiting
-- Centralized logging
-- Playwright end-to-end testing
-- WCAG 2.2 accessibility auditing
-- Content Security Policy
-- Stricter production CORS policies
-- Secrets management
-- Horizontal service scaling
+- Role-based authorization
+- WebSocket or Server-Sent Events for real-time telemetry
+- OpenTelemetry traces
+- Prometheus metrics and Grafana dashboards
+- Distributed rate limiting
+- Centralized secrets management
+- Horizontal API scaling
+- End-to-end Playwright tests
+- Production identity-provider integration
 
-These are architectural evolution opportunities rather than features claimed as implemented in the current version.
-
----
-
-## Engineering Concepts Demonstrated
-
-This project demonstrates practical experience with:
-
-- Modern JavaScript
-- React application architecture
-- Component-driven development
-- REST APIs
-- HTTP standards
-- Responsive web design
-- State management
-- Server-state caching
-- Browser APIs
-- Web Components
-- Python backend development
-- API validation
-- SQL data modeling
-- Containerization
-- Reverse proxy configuration
-- Automated testing
-- CI workflows
-- Enterprise-oriented application architecture
-
----
-
-## Project Purpose
-
-EdgeOps Console was created as a portfolio project demonstrating how a modern frontend application can be designed for an infrastructure-heavy enterprise environment.
-
-The focus is not only visual presentation but also maintainable architecture, HTTP communication, reusable components, backend integration, testing, deployment concepts, and production-oriented engineering decisions.
-
----
+These are future scalability and security enhancements and are not presented as currently implemented features.
 
 ## Author
 
-**Andrej Pecirep**
+**Andrej Pecirep**  
+Bachelor of Electrical Engineering — Computing and Informatics  
+Kiseljak, Bosnia and Herzegovina
 
-Electrical Engineering — Computing and Informatics
-
-Software Developer focused on modern web applications, frontend engineering, backend integration, and enterprise-oriented software development.
-
----
+GitHub: `https://github.com/andro1324`
 
 ## License
 
-This project is intended for educational, portfolio, and demonstration purposes.
+This project is intended for portfolio, educational and technical demonstration purposes.
