@@ -40,4 +40,9 @@ export const api = {
   getIncidents: () => request('/incidents'),
   createIncident: (payload) => request('/incidents', { method: 'POST', body: JSON.stringify(payload) }),
   resolveIncident: (id) => request(`/incidents/${id}/resolve`, { method: 'PATCH' }),
+  getIncidentAudit: (id) => request(`/incidents/${id}/audit`),
+  search: (query) => request(`/search?q=${encodeURIComponent(query)}`),
+  getNotifications: () => request('/notifications'),
+  markNotificationsRead: () => request('/notifications/read-all', { method: 'PATCH' }),
+  getProfile: () => request('/profile'),
 };
