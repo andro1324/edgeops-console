@@ -1,19 +1,45 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: edgeops
+      POSTGRES_USER: edgeops
+      POSTGRES_PASSWORD: edgeops
+    volumes:
+      - edgeops_pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edgeops -d edgeops"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://edgeops:edgeops@db:5432/edgeops
     ports:
       - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/overview')"]
-      interval: 20s
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+
   web:
-    image: nginx:1.27-alpine
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
-    volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
+volumes:
+  edgeops_pgdata:
