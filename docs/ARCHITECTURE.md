@@ -157,3 +157,13 @@ For a larger production environment, the next architectural enhancements would t
 - End-to-end browser testing
 
 These items are documented as future enhancements and are not claimed as implemented in the current project.
+
+
+## Runtime health and host diagnostics
+
+- `GET /api/health/live` indicates that the API process can respond.
+- `GET /api/health/ready` performs a database connectivity check and is used by Docker Compose as the API readiness probe.
+- `GET /api/system/metrics` returns a best-effort snapshot of CPU, memory, disk, and load metrics for the environment running the API. Linux procfs is used when available. Under Docker, this may describe the container and is not a fleet telemetry collector.
+- `scripts/linux-diagnostics.sh` is a read-only helper for inspecting a Linux host during local troubleshooting and demonstrations.
+
+The application is still a portfolio/demo system. Authentication and role-based authorization are not implemented; do not expose mutation endpoints to an untrusted network. Global traffic figures and seeded node values are demonstration data.

@@ -60,3 +60,25 @@ def test_search_notifications_and_profile():
         profile = client.get('/api/profile')
         assert profile.status_code == 200
         assert profile.json()['name'] == 'Andrej Pecirep'
+
+
+def test_health_endpoints():
+    with TestClient(app) as client:
+        live = client.get('/api/health/live')
+        assert live.status_code == 200
+        assert live.json() == {'status': 'ok'}
+
+        ready = client.get('/api/health/ready')
+        assert ready.status_code == 200
+        assert ready.json()['database'] == 'ok'
+
+
+def test_system_metrics_endpoint():
+    with TestClient(app) as client:
+        response = client.get('/api/system/metrics')
+        assert response.status_code == 200
+        body = response.json()
+        assert body['source'] == 'host'
+        assert 'cpu_percent' in body
+        assert 'memory' in body
+        assert 'disk' in body

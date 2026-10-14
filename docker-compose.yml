@@ -20,13 +20,17 @@ services:
       dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgresql://edgeops:edgeops@db:5432/edgeops
+      EDGEOPS_AUTH_ENABLED: ${EDGEOPS_AUTH_ENABLED:-false}
+      EDGEOPS_ADMIN_USERNAME: ${EDGEOPS_ADMIN_USERNAME:-admin}
+      EDGEOPS_ADMIN_PASSWORD: ${EDGEOPS_ADMIN_PASSWORD:-}
+      EDGEOPS_AUTH_SECRET: ${EDGEOPS_AUTH_SECRET:-}
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/overview')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/ready')"]
       interval: 10s
       timeout: 5s
       retries: 5

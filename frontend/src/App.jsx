@@ -3,11 +3,12 @@ import AppShell from './components/AppShell';
 import DashboardPage from './features/dashboard/DashboardPage';
 import InfrastructurePage from './features/infrastructure/InfrastructurePage';
 import IncidentsPage from './features/incidents/IncidentsPage';
+import AuthGate from './components/AuthGate';
 import TrafficPage from './features/traffic/TrafficPage';
 
 export default function App() {
   return (
-    <Routes>
+    <AuthGate><Routes>
       <Route element={<AppShell />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
@@ -16,6 +17,6 @@ export default function App() {
         <Route path="/incidents" element={<IncidentsPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
-    </Routes>
+    </Routes></AuthGate>
   );
 }

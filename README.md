@@ -20,6 +20,9 @@ The project combines a responsive React interface with a FastAPI backend, persis
 - Zustand for lightweight local UI state
 - Native Web Component integration
 - FastAPI REST backend with Pydantic validation
+- Live/readiness health endpoints for container orchestration
+- Best-effort host CPU, memory, disk and load metrics endpoint on Linux
+- Read-only Linux diagnostics script for interview demonstrations
 - SQLite persistence for simple local development
 - PostgreSQL persistence automatically enabled through Docker Compose
 - Dockerized API and frontend
@@ -344,6 +347,22 @@ To remove containers and the database volume completely:
 docker compose down -v
 ```
 
+## Linux Operations and Host Metrics
+
+The backend exposes `GET /api/system/metrics`, which reports CPU utilization (when Linux procfs is available), memory usage, disk usage, load average, and whether it detects a container environment. These metrics describe the environment in which the API process runs. When the API runs in Docker, resource values can describe the container rather than the physical host; they must not be presented as fleet-wide telemetry.
+
+Health endpoints are available at `GET /api/health/live` and `GET /api/health/ready`. Readiness executes a lightweight database query and returns HTTP 503 if the database cannot be reached. Docker Compose uses the readiness endpoint for its API health check.
+
+On an Ubuntu/Linux machine, run the read-only diagnostics helper with:
+
+```bash
+./scripts/linux-diagnostics.sh
+```
+
+It displays OS details, uptime/load, memory, root filesystem usage, top CPU processes, and listening TCP ports. It does not change system configuration.
+
+The dashboard's existing global traffic and regional figures remain seeded demonstration data. The system metrics endpoint is a separate live snapshot of the API runtime; neither source should be represented as production fleet telemetry.
+
 ## Testing
 
 ### Backend
@@ -363,6 +382,7 @@ pytest -q
 The backend test suite covers:
 
 - Operations overview contract
+- Liveness/readiness checks and system metrics response contract
 - Incident creation
 - Incident resolution
 - Persistent incident audit entries
@@ -445,8 +465,8 @@ The current project already includes persistent PostgreSQL support, an audit tra
 
 For a larger real-world deployment, logical next steps would include:
 
-- OAuth 2.0 / OpenID Connect authentication
-- Role-based authorization
+- OAuth 2.0 / OpenID Connect authentication (not currently implemented)
+- Role-based authorization (not currently implemented)
 - WebSocket or Server-Sent Events for real-time telemetry
 - OpenTelemetry traces
 - Prometheus metrics and Grafana dashboards
@@ -469,3 +489,12 @@ GitHub: `https://github.com/andro1324`
 ## License
 
 This project is intended for portfolio, educational and technical demonstration purposes.
+
+
+## Optional API authentication
+
+Authentication is disabled for local portfolio/demo use by default. Before exposing the application publicly, configure unique strong credentials in `.env` and set `EDGEOPS_AUTH_ENABLED=true`, `EDGEOPS_ADMIN_USERNAME`, `EDGEOPS_ADMIN_PASSWORD`, and `EDGEOPS_AUTH_SECRET` (at least 32 random characters). The API issues short-lived, one-hour HMAC-signed bearer tokens. Data endpoints require a valid token when enabled; liveness/readiness and authentication status remain public for deployment probes. The included login screen stores the bearer token in browser local storage, so use HTTPS and understand that this is a portfolio implementation, not a substitute for a reviewed identity provider, refresh-token rotation, rate limiting, MFA, or security testing. Do not use default/example credentials in a public deployment.
+
+## Live system metrics
+
+The dashboard queries `/api/system/metrics` for CPU, memory, disk, and load-average snapshots. In Docker, these values describe the container environment and may not equal the physical host's metrics. `/api/health/live` checks that the API process is running; `/api/health/ready` also checks database connectivity.

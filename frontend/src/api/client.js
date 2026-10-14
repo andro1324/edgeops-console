@@ -15,7 +15,7 @@ export async function request(path, options = {}) {
   try {
     const response = await fetch(`${BASE_URL}${path}`, {
       ...options,
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...options.headers },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(localStorage.getItem('edgeops_token') ? { Authorization: `Bearer ${localStorage.getItem('edgeops_token')}` } : {}), ...options.headers },
       signal: controller.signal,
     });
     if (!response.ok) {
@@ -34,6 +34,8 @@ export async function request(path, options = {}) {
 }
 
 export const api = {
+  login: (username, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  getSystemMetrics: () => request('/system/metrics'),
   getOverview: () => request('/overview'),
   getNodes: () => request('/nodes'),
   getTraffic: () => request('/traffic'),
