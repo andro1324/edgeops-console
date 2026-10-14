@@ -1,65 +1,57 @@
 # EdgeOps Console Architecture
 
-## 1. System Overview
+## 1. Overview
 
-EdgeOps Console is a three-tier full-stack application composed of a React client, FastAPI service and persistent relational database.
+EdgeOps Console is a full-stack operations dashboard built with a React frontend, a FastAPI REST API, and a relational database. It provides a demo environment for viewing edge infrastructure, traffic summaries, incidents, notifications, and system metrics.
 
 ```text
 Browser
   |
   | HTTP / JSON
   v
-Nginx / Vite proxy
+Nginx (container deployment) or Vite proxy (local development)
   |
   v
 FastAPI REST API
   |
   v
-SQLite (local) or PostgreSQL (Docker)
+SQLite (local development) or PostgreSQL (Docker deployment)
 ```
 
-The application is intentionally designed so the same API contract works with a zero-configuration local database and a production-like PostgreSQL deployment.
+The project supports a lightweight local setup and a Docker Compose setup using PostgreSQL. Some infrastructure and traffic values are seeded demonstration data; they should not be interpreted as live fleet telemetry.
 
-## 2. Frontend Architecture
+## 2. Frontend
 
-The React client follows a feature-oriented structure. Domain-specific code is grouped into dashboard, infrastructure, traffic and incident modules, while reusable presentation primitives remain under `components/`.
+The frontend is built with React and organized around application features such as the dashboard, infrastructure, traffic, and incidents. Shared UI elements live in reusable components.
 
-TanStack Query owns remote server state, including loading, error, caching, mutation and invalidation behavior. Zustand is intentionally limited to lightweight local interface state such as sidebar behavior.
+- **TanStack Query** manages remote server state, including loading, errors, caching, mutations, and query invalidation.
+- **Zustand** is used for lightweight local interface state.
+- A centralized Fetch API client handles JSON requests, timeouts, cancellation with `AbortController`, and normalized errors.
+- A native `status-badge` Custom Element demonstrates how a Web Component can be used alongside React.
+- The topbar provides global search, notifications, and profile information.
 
-The Fetch API is wrapped by a centralized client that provides JSON headers, request timeout handling, AbortController cancellation and normalized errors.
+### Global search
 
-A native `<status-badge>` Custom Element demonstrates interoperability between React and standards-based Web Components.
+The search input is debounced before it calls `GET /api/search`. The API searches available edge nodes, incidents, and regions and returns results that can link to relevant frontend routes.
 
-## 3. Interactive Topbar
+### Notifications and profile
 
-The topbar is application functionality rather than static decoration.
+Notifications are stored in the database. The unread indicator reflects notification state, and `PATCH /api/notifications/read-all` marks notifications as read. The profile panel retrieves profile metadata from `GET /api/profile`.
 
-### Global Search
+## 3. Backend and API
 
-Search input is debounced before querying `GET /api/search`. The backend searches edge nodes, incidents and regions. Search results include a destination route so selecting an item navigates to the relevant module.
+The backend uses FastAPI to expose REST endpoints for the dashboard, infrastructure inventory, traffic summaries, incidents, search, notifications, profile data, authentication, health checks, and system metrics.
 
-### Notifications
+Pydantic models validate request payloads such as incident creation. Database operations are handled by the database layer in `app/db.py`.
 
-The notification menu uses persistent records from the database. Unread state is reflected by the notification indicator and can be cleared through `PATCH /api/notifications/read-all`.
+The API includes standard HTTP methods and status codes for reading and changing resources. Validation and missing-resource errors are returned as API responses rather than being handled only in the frontend.
 
-### Profile
+## 4. Database and persistence
 
-The profile control loads current profile metadata from `GET /api/profile` and exposes it through an accessible interactive panel.
+The application supports two database modes:
 
-## 4. Backend Architecture
-
-FastAPI exposes typed REST endpoints for operational metrics, infrastructure inventory, traffic analytics, incidents, search, notifications and profile data.
-
-Pydantic validates incident creation payloads. API routes delegate persistence work to `app/db.py` rather than directly manipulating in-memory Python collections.
-
-The database layer supports two runtime modes:
-
-- **SQLite** — default for local development
-- **PostgreSQL** — automatically configured by Docker Compose
-
-Schema initialization is idempotent and seed data is inserted only when the relevant tables are empty.
-
-## 5. Persistence
+- **SQLite** is the default for local development.
+- **PostgreSQL** is configured for the Docker Compose environment.
 
 The relational model includes:
 
@@ -69,101 +61,133 @@ The relational model includes:
 - `incident_audit`
 - `notifications`
 
-Incident creation writes a persistent incident plus a corresponding audit entry. Incident resolution updates the record and appends another audit event.
+Schema initialization is designed to be repeatable, and seed data is added when the relevant tables are empty. The relational schema is documented in `database/schema.sql`.
 
-Because state is stored in the database, newly created incidents and notification read state survive API restarts.
+Incident creation persists the incident and an associated audit entry. Resolving an incident updates its state and adds another audit event. Since incident and notification state is stored in the database, it can survive API restarts when the same persistent database is used.
 
-The canonical relational schema is documented in `database/schema.sql`.
+## 5. Incident audit trail
 
-## 6. Incident Audit Trail
+The audit trail records important incident lifecycle changes separately from the current incident record. An audit entry includes the incident ID, action, actor, details, and timestamp.
 
-Every important incident lifecycle transition writes an append-only audit entry containing:
+The Incident Center can retrieve this history through `GET /api/incidents/{id}/audit`. Keeping audit events separate from the mutable incident record preserves a history of changes after the incident status has been updated.
 
-- Incident ID
-- Action
-- Actor
-- Details
-- Timestamp
+## 6. Optional API authentication
 
-The frontend exposes this history through the Incident Center using `GET /api/incidents/{id}/audit`.
+Authentication can be enabled through environment configuration. It is disabled by default to preserve the simple local demonstration workflow.
 
-This is deliberately separate from the mutable incident record so operational history remains available after status changes.
+When enabled:
 
-## 7. HTTP & Browser Engineering
+- `GET /api/auth/status` reports whether authentication is enabled without returning credentials.
+- `POST /api/auth/login` validates the configured username and password and issues a short-lived bearer token signed with HMAC-SHA256.
+- Protected data endpoints require a valid bearer token.
+- Liveness and readiness endpoints remain available for container health checks.
+- The React application displays a sign-in form when authentication is enabled.
 
-The application demonstrates:
+Relevant configuration keys are documented in `.env.example`:
 
-- JSON content negotiation
-- RESTful GET, POST and PATCH operations
-- HTTP status codes including 200, 201, 204, 400, 404 and validation responses
-- Request cancellation through AbortController
-- Request timeout behavior
-- CORS for local development
-- Vite development proxying
-- Nginx API reverse proxying
-- SPA history fallback through `try_files`
-- Native browser Custom Elements
+- `EDGEOPS_AUTH_ENABLED`
+- `EDGEOPS_ADMIN_USERNAME`
+- `EDGEOPS_ADMIN_PASSWORD`
+- `EDGEOPS_AUTH_SECRET`
 
-## 8. Container Architecture
+Use unique, strong values for deployments. Do not commit real passwords, tokens, or secret keys. The built-in authentication is a portfolio/demo implementation, not a substitute for a security-reviewed identity provider. It does not by itself provide features such as multi-factor authentication, refresh-token rotation, comprehensive rate limiting, or a full security audit.
 
-`docker compose up --build` starts three services:
+## 7. Health checks and system metrics
+
+The API exposes health endpoints for container orchestration and basic operational checks:
+
+- `GET /api/health/live` indicates that the API process can respond.
+- `GET /api/health/ready` checks database connectivity and is used as the API readiness probe.
+
+`GET /api/system/metrics` returns a best-effort snapshot of CPU, memory, disk, and load metrics for the environment in which the API runs. Linux `/proc` information is used where available. In a container, reported values may describe the container rather than the physical host. On systems without the expected Linux interfaces, some metrics may be unavailable.
+
+The dashboard displays the returned metrics. This endpoint is not a fleet-wide monitoring or telemetry collection system.
+
+## 8. Linux diagnostics
+
+The read-only helper script `scripts/linux-diagnostics.sh` reports basic Linux host information, including OS details, memory, disk usage, load, processes, and listening TCP ports.
+
+Run it from the repository root:
+
+```bash
+bash scripts/linux-diagnostics.sh
+```
+
+Review its output before sharing it. Hostnames, process names, addresses, and open ports may reveal information about the machine on which it was run.
+
+## 9. HTTP, browser, and deployment configuration
+
+The project demonstrates:
+
+- JSON-based REST communication
+- `GET`, `POST`, and `PATCH` operations
+- HTTP status codes such as `200`, `201`, `204`, `400`, and `404`, plus validation responses
+- Request cancellation with `AbortController` and request timeouts
+- CORS configuration for local development
+- Vite proxying during frontend development
+- Nginx reverse proxying and single-page application history fallback in the container deployment
+- Use of a native browser Custom Element alongside React
+
+### Docker Compose
+
+The container deployment runs three services:
 
 ```text
-web (Nginx + React build)
+web (Nginx + React production build)
         |
         v
 api (FastAPI)
         |
         v
-db (PostgreSQL 16)
+db (PostgreSQL)
 ```
 
-The database service uses a named Docker volume for durable PostgreSQL storage. Health checks ensure PostgreSQL is ready before the API starts and the API is healthy before the web service is treated as ready.
+The PostgreSQL service uses a named Docker volume for persistent database storage. Health checks help ensure the database is ready before the API depends on it and that the API is healthy before the web service is treated as ready.
 
-## 9. Quality & CI
+Start the stack from the repository root with:
 
-GitHub Actions validates both application layers.
+```bash
+docker compose up --build
+```
 
-Frontend CI runs:
+The Compose configuration includes development/demo defaults. Do not use default or example credentials in a public or production deployment.
 
-- npm dependency installation
-- ESLint
-- Vitest
-- Vite production build
+## 10. Tests and continuous integration
 
-Backend CI runs:
+GitHub Actions is configured to validate the frontend and backend.
 
-- Python dependency installation
-- Pytest with `PYTHONPATH=.`
+Frontend checks include dependency installation, ESLint, Vitest, and a Vite production build. Backend checks install Python dependencies and run Pytest with the project import path configured.
 
-Backend tests cover the overview contract, incident lifecycle, persistent audit history, search, notifications and profile data.
+To run backend tests:
 
-## 10. Security & Production Evolution
+```bash
+cd backend
+python -m pytest -q
+```
 
-The repository now includes persistent database storage, PostgreSQL support, a persistent incident audit trail, interactive search and notifications, container deployment and CI.
+To run frontend checks:
 
-For a larger production environment, the next architectural enhancements would typically include:
+```bash
+cd frontend
+npm install
+npm test
+npm run lint
+npm run build
+```
 
-- OAuth 2.0 / OpenID Connect authentication
-- Role-based authorization
-- Centralized identity and SSO
-- OpenTelemetry distributed tracing
-- Prometheus metrics
-- Grafana visualization
-- WebSocket or Server-Sent Events for real-time telemetry
-- Distributed API rate limiting
-- Secrets management
-- Centralized structured logging
-- End-to-end browser testing
+Run these commands in an environment with the required runtimes and dependencies installed. Test results should be reported based on the checks actually run in that environment.
 
-These items are documented as future enhancements and are not claimed as implemented in the current project.
+## 11. Security and limitations
 
+EdgeOps Console is a portfolio/demo application. Before using it in a public or production environment, review and harden its configuration and security controls.
 
-## Runtime health and host diagnostics
+Important limitations and considerations:
 
-- `GET /api/health/live` indicates that the API process can respond.
-- `GET /api/health/ready` performs a database connectivity check and is used by Docker Compose as the API readiness probe.
-- `GET /api/system/metrics` returns a best-effort snapshot of CPU, memory, disk, and load metrics for the environment running the API. Linux procfs is used when available. Under Docker, this may describe the container and is not a fleet telemetry collector.
-- `scripts/linux-diagnostics.sh` is a read-only helper for inspecting a Linux host during local troubleshooting and demonstrations.
+- Seeded node and global traffic figures are demonstration data, not verified live infrastructure measurements.
+- System metrics describe the API runtime environment and are not a fleet telemetry collector.
+- Authentication is optional and must be explicitly enabled; configure unique credentials and a strong random secret before exposing protected endpoints.
+- Use HTTPS, appropriate access controls, secure secret management, rate limiting, structured logging, and security testing for any real deployment.
+- Do not expose mutation endpoints to untrusted networks without reviewing authentication and authorization behavior.
+- Review diagnostic script output before sharing it publicly.
 
-The application is still a portfolio/demo system. Authentication and role-based authorization are not implemented; do not expose mutation endpoints to an untrusted network. Global traffic figures and seeded node values are demonstration data.
+Potential future improvements for a larger deployment include OAuth 2.0/OpenID Connect, role-based access control, centralized identity, OpenTelemetry tracing, Prometheus/Grafana integration, real-time updates with WebSockets or Server-Sent Events, distributed rate limiting, centralized structured logging, and end-to-end browser tests. These are possible future enhancements and should not be considered implemented unless the codebase explicitly provides them.
